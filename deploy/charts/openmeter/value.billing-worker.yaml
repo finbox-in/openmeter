@@ -10,10 +10,11 @@ image:
   pullPolicy: IfNotPresent
 
   # -- Image tag override for the default value (chart appVersion).
-  tag: ""
+  tag: "v1.0.0-beta.217"
 
 # -- Reference to one or more secrets to be used when [pulling images](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-pod-that-uses-your-secret) (from private registries).
-imagePullSecrets: []
+imagePullSecrets:
+  - name: ecr-registry-secret
 
 # -- A name in place of the chart name for `app:` labels.
 nameOverride: ""
@@ -102,11 +103,20 @@ resources: {}
   #   memory: 128Mi
 
 # -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) configuration.
-nodeSelector: {}
+nodeSelector: 
+  kubernetes.io/arch: amd64
 
 # -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for node taints.
 # See the [API reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling) for details.
-tolerations: []
+tolerations: 
+  - key: "fbx.platform/nodepool-family"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+  - key: "fbx.lending/nodepool-family"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
 
 # -- [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) configuration.
 # See the [API reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#scheduling) for details.
@@ -121,8 +131,6 @@ init:
     tag: "1.37.0"
 
 kafka:
-  # -- Specifies whether Kafka (using the [Bitnami Kafka](oci://registry-1.docker.io/bitnamicharts)) should be installed.
-  # **Not recommended for production environments.**
   enabled: true
 
   listeners:
@@ -137,6 +145,32 @@ kafka:
       protocol: SASL_PLAINTEXT
       sslClientAuth: ""
 
+  controller:
+    tolerations:
+      - key: "fbx.platform/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "fbx.lending/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+    nodeSelector:
+      kubernetes.io/arch: amd64
+
+  broker:
+    tolerations:
+      - key: "fbx.platform/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "fbx.lending/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+    nodeSelector:
+      kubernetes.io/arch: amd64
+
 clickhouse:
   # -- Specifies whether Clickhouse (using the [Clickhouse Operator](https://github.com/Altinity/clickhouse-operator)) should be installed.
   # **Not recommended for production environments.**
@@ -149,7 +183,7 @@ clickhouse:
 
 svix:
   # **Not recommended for production environments.**
-  enabled: true
+  enabled: false
 
   # -- Specifies the JWT secret SVIX uses for authentication.
   # For details, [see](https://github.com/svix/svix-webhooks?tab=readme-ov-file#authentication).
@@ -171,7 +205,7 @@ svix:
     dsn: ""
 
   # -- Number of replicas (pods) to launch.
-  replicaCount: 1
+  replicaCount: 0
 
   image:
     # -- Name of the image repository to pull the container image from.
@@ -209,6 +243,30 @@ redis:
   # **Not recommended for production environments.**
   # All further values can be configured in the `redis` section.
   enabled: true
+  master:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    tolerations:
+      - key: "fbx.platform/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "fbx.lending/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+  replica:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    tolerations:
+      - key: "fbx.platform/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "fbx.lending/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
 
   auth:
     enabled: false
@@ -224,6 +282,17 @@ postgresql:
   nameOverride: postgres
 
   primary:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    tolerations:
+      - key: "fbx.platform/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "fbx.lending/nodepool-family"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
     initdb:
       scripts:
         setup.sql: |
@@ -246,7 +315,7 @@ balanceWorker:
 
 notificationService:
   # -- Number of Notification Service replicas (pods) to launch.
-  replicaCount: 1
+  replicaCount: 0
 
 sinkWorker:
   # -- Number of Sink Worker replicas (pods) to launch.
@@ -254,11 +323,13 @@ sinkWorker:
 
 billingWorker:
   # -- Number of Billing Worker replicas (pods) to launch.
+  nodeSelector:
+    kubernetes.io/arch: arm64
   replicaCount: 1
   image:
-    repository: openmeter-billing-worker
-    tag: local
-    pullPolicy: IfNotPresent
+    repository: 909798297030.dkr.ecr.ap-south-1.amazonaws.com/openmeter/billing-worker
+    tag: latest
+    pullPolicy: Always
 
 # -- List of CA Root certificates to inject into pods at runtime.
 # See [values.yaml](values.yaml)

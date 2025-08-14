@@ -413,8 +413,13 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.billingWorker.image }}
+          image: "{{ .Values.billingWorker.image.repository }}:{{ .Values.billingWorker.image.tag }}"
+          imagePullPolicy: {{ .Values.billingWorker.image.pullPolicy }}
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- end }}
           command: ["/entrypoint.sh", "openmeter-billing-worker"]
           args: ["--telemetry-address", "0.0.0.0:10000", "--config", "/etc/openmeter/config.yaml"]
           ports:
